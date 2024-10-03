@@ -3,6 +3,8 @@ let pagination = {};
 let allVotes = [];
 let startDate, endDate;
 let criteriaChart, pandalChart;
+let allCriteria = [];
+let allPandals = [];
 
 flatpickr("#dateRange", {
     mode: "range",
@@ -25,6 +27,7 @@ async function checkAdminStatus() {
         const data = await response.json();
         if (data.isAdmin) {
             document.getElementById('adminContent').classList.remove('hidden');
+            await fetchStats();
             fetchVotes();
         } else {
             document.getElementById('accessDenied').classList.remove('hidden');
@@ -32,6 +35,22 @@ async function checkAdminStatus() {
     } catch (error) {
         console.error('Error checking admin status:', error);
         document.getElementById('accessDenied').classList.remove('hidden');
+    }
+}
+
+async function fetchStats() {
+    try {
+        const response = await fetch('/api/votes/stats', {
+            headers: {
+                'Authorization': `Bearer ${getCookie('jwtToken')}`
+            }
+        });
+        const data = await response.json();
+        allCriteria = data.criteria;
+        allPandals = data.pandals;
+        updateFilters();
+    } catch (error) {
+        console.error('Error fetching stats:', error);
     }
 }
 
@@ -61,8 +80,7 @@ async function fetchVotes() {
         pagination = data.pagination;
         renderTable();
         updatePaginationInfo();
-        updateVoteSummary(data.votesByCriteria, data.votesByPandal);
-        updateFilters(data.votesByCriteria, data.votesByPandal);
+        updateVoteSummary(data.pieChartData);
     } catch (error) {
         console.error('Error fetching votes:', error);
         alert(`Failed to load votes: ${error.message}`);
@@ -94,7 +112,7 @@ function updatePaginationInfo() {
     paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (Total items: ${pagination.totalItems})`;
 }
 
-function updateVoteSummary(votesByCriteria, votesByPandal) {
+function updateVoteSummary(pieChartData) {
     if (criteriaChart) criteriaChart.destroy();
 
     const criteriaCtx = document.getElementById('criteriaChart').getContext('2d');
@@ -104,7 +122,7 @@ function updateVoteSummary(votesByCriteria, votesByPandal) {
         maintainAspectRatio: false,
         title: {
             display: true,
-            text: 'Votes by Criteria'
+            text: 'Vote Distribution'
         },
         legend: {
             position: 'right',
@@ -120,17 +138,45 @@ function updateVoteSummary(votesByCriteria, votesByPandal) {
                     boxWidth: 10,
                     fontSize: 10
                 }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed !== null) {
+                            label += context.parsed.toFixed(2) + '%';
+                        }
+                        return label;
+                    }
+                }
             }
         }
     };
 
+    let labels, data;
+    if (pieChartData.byCriteria && pieChartData.byPandal) {
+        // Show both criteria and pandal data
+        labels = [...pieChartData.byCriteria.map(item => `Criteria: ${item.name}`), 
+                  ...pieChartData.byPandal.map(item => `Pandal: ${item.name}`)];
+        data = [...pieChartData.byCriteria.map(item => item.percentage), 
+                ...pieChartData.byPandal.map(item => item.percentage)];
+    } else {
+        // Show either criteria or pandal data based on filter
+        labels = pieChartData.map(item => item.name);
+        data = pieChartData.map(item => item.percentage);
+    }
+
     criteriaChart = new Chart(criteriaCtx, {
         type: 'pie',
         data: {
-            labels: votesByCriteria.map(item => item.name),
+            labels: labels,
             datasets: [{
-                data: votesByCriteria.map(item => item.value),
+                data: data,
                 backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
                     '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
                 ]
             }]
@@ -138,33 +184,39 @@ function updateVoteSummary(votesByCriteria, votesByPandal) {
         options: {...chartOptions, plugins: {...chartOptions.plugins, title: {display: true}}}
     });
 
-
     // Set a fixed size for the chart containers
-    document.getElementById('criteriaChart').style.height = '180px';
+    document.getElementById('criteriaChart').style.height = '400px';
 }
 
-function updateFilters(votesByCriteria, votesByPandal) {
+function updateFilters() {
     const criteriaFilter = document.getElementById('criteriaFilter');
     const pandalFilter = document.getElementById('pandalFilter');
+
+    const selectedCriteria = criteriaFilter.value;
+    const selectedPandal = pandalFilter.value;
 
     // Clear existing options
     criteriaFilter.innerHTML = '<option value="">All Criteria</option>';
     pandalFilter.innerHTML = '<option value="">All Pandals</option>';
 
     // Add new options
-    votesByCriteria.forEach(item => {
+    allCriteria.forEach(item => {
         const option = document.createElement('option');
         option.value = item.name;
-        option.textContent = `${item.name} (${item.value})`;
+        option.textContent = `${item.name} (${item.count})`;
         criteriaFilter.appendChild(option);
     });
 
-    votesByPandal.forEach(item => {
+    allPandals.forEach(item => {
         const option = document.createElement('option');
         option.value = item.name;
-        option.textContent = `${item.name} (${item.value})`;
+        option.textContent = `${item.name} (${item.count})`;
         pandalFilter.appendChild(option);
     });
+
+    // Restore selected values
+    criteriaFilter.value = selectedCriteria;
+    pandalFilter.value = selectedPandal;
 }
 
 document.getElementById('prevPage').addEventListener('click', () => {

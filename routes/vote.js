@@ -5,6 +5,58 @@ const ExcelJS = require('exceljs');
 
 const isAdmin = require('../middleware/isAdmin');
 
+
+// Get stats (criteria and pandal counts)
+router.get('/stats', isAdmin, async (req, res) => {
+    try {
+        const allVotes = await Vote.find();
+
+
+        // Get criteria stats
+        const criteriaStats = {};
+        allVotes.forEach(vote => {
+            criteriaStats[vote.criteria] = (criteriaStats[vote.criteria] || 0) + 1;
+        });
+
+        const criteriaList = Object.entries(criteriaStats)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
+
+        // Get pandal stats
+        const pandalStats = {};
+        allVotes.forEach(vote => {
+            pandalStats[vote.pandalName] = (pandalStats[vote.pandalName] || 0) + 1;
+        });
+
+        const pandalList = Object.entries(pandalStats)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
+        // Get name and criteria stats
+        const nameAndCriteriaStats = {};
+        allVotes.forEach(vote => {
+            const key = `${vote.name}|${vote.criteria}`;
+            nameAndCriteriaStats[key] = (nameAndCriteriaStats[key] || 0) + 1;
+        });
+
+        const nameAndCriteriaList = Object.entries(nameAndCriteriaStats)
+            .map(([key, count]) => {
+                const [name, criteria] = key.split('|');
+                return { name, criteria, count };
+            })
+            .sort((a, b) => b.count - a.count);
+
+        res.json({
+            criteria: criteriaList,
+            pandals: pandalList,
+            nameAndCriteria: nameAndCriteriaList
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Generate Excel for votes
 router.get('/excel', isAdmin, async (req, res) => {
     try {
@@ -104,27 +156,73 @@ router.get('/', async (req, res) => {
             itemsPerPage: limit
         };
 
-        // Get total votes by criteria for pie chart
-        const votesByCriteria = await Vote.aggregate([
-            { $match: filter },
-            { $group: { _id: "$criteria", value: { $sum: 1 } } },
-            { $project: { name: "$_id", value: 1, _id: 0 } },
-            { $sort: { value: -1 } }
-        ]);
+        let pieChartData;
+        if (criteria) {
+            // If criteria is specified, show percentage of votes by pandalName
+            pieChartData = await Vote.aggregate([
+                { $match: filter },
+                { $group: { _id: "$pandalName", count: { $sum: 1 } } },
+                { $project: {
+                    name: "$_id",
+                    percentage: { $multiply: [{ $divide: ["$count", totalVotes] }, 100] },
+                    _id: 0
+                }},
+                { $sort: { percentage: -1 } }
+            ]);
+        } else if (pandalName) {
+            // If pandalName is specified, show percentage of votes by criteria
+            pieChartData = await Vote.aggregate([
+                { $match: filter },
+                { $group: { _id: "$criteria", count: { $sum: 1 } } },
+                { $project: {
+                    name: "$_id",
+                    percentage: { $multiply: [{ $divide: ["$count", totalVotes] }, 100] },
+                    _id: 0
+                }},
+                { $sort: { percentage: -1 } }
+            ]);
+        } else {
+            // If neither criteria nor pandalName is specified, show both
+            const votesByCriteria = await Vote.aggregate([
+                { $match: filter },
+                { $group: { _id: "$criteria", count: { $sum: 1 } } },
+                { $project: {
+                    name: "$_id",
+                    percentage: { $multiply: [{ $divide: ["$count", totalVotes] }, 100] },
+                    _id: 0
+                }},
+                { $sort: { percentage: -1 } }
+            ]);
 
-        // Get total votes by pandal for pie chart
-        const votesByPandal = await Vote.aggregate([
-            { $match: filter },
-            { $group: { _id: "$pandalName", value: { $sum: 1 } } },
-            { $project: { name: "$_id", value: 1, _id: 0 } },
-            { $sort: { value: -1 } }
-        ]);
+            const votesByPandal = await Vote.aggregate([
+                { $match: filter },
+                { $group: { _id: "$pandalName", count: { $sum: 1 } } },
+                { $project: {
+                    name: "$_id",
+                    percentage: { $multiply: [{ $divide: ["$count", totalVotes] }, 100] },
+                    _id: 0
+                }},
+                { $sort: { percentage: -1 } }
+            ]);
+
+            pieChartData = {
+                byCriteria: votesByCriteria,
+                byPandal: votesByPandal
+            };
+        }
+
+        // Get all unique criteria
+        const allCriteria = await Vote.distinct('criteria');
+
+        // Get all unique pandalNames
+        const allPandalNames = await Vote.distinct('pandalName');
 
         res.json({
             pagination,
             votes,
-            votesByCriteria,
-            votesByPandal
+            pieChartData,
+            allCriteria,
+            allPandalNames
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -190,5 +288,8 @@ router.post('/', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
+
+
 
 module.exports = router;
