@@ -1310,11 +1310,6 @@ video {
   color: rgb(234 88 12 / var(--tw-text-opacity));
 }
 
-.text-orange-700 {
-  --tw-text-opacity: 1;
-  color: rgb(194 65 12 / var(--tw-text-opacity));
-}
-
 .text-orange-800 {
   --tw-text-opacity: 1;
   color: rgb(154 52 18 / var(--tw-text-opacity));
@@ -1666,10 +1661,28 @@ table tr:hover {
 
 .card:hover .face-front {
   transform: rotateY(-180deg);
+  -webkit-transform: rotateY(-180deg);
 }
 
 .card:hover .face-back {
   transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+}
+
+/* For Safari */
+
+@media not all and (-webkit-min-device-pixel-ratio:0), not all and (min-resolution:.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    .card:hover .face-front {
+      transform: rotateY(-180deg) translateZ(1px);
+      -webkit-transform: rotateY(-180deg) translateZ(1px);
+    }
+
+    .card:hover .face-back {
+      transform: rotateY(0deg) translateZ(1px);
+      -webkit-transform: rotateY(0deg) translateZ(1px);
+    }
+  }
 }
 
 .hover\:-translate-y-1:hover {
@@ -2007,4 +2020,3 @@ table tr:hover {
     line-height: 1.75rem;
   }
 }
-  

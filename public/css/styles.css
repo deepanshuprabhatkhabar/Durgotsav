@@ -190,8 +190,23 @@ body {
   }
   .card:hover .face-front {
     transform: rotateY(-180deg);
+    -webkit-transform: rotateY(-180deg);
   }
   .card:hover .face-back {
     transform: rotateY(0deg);
+    -webkit-transform: rotateY(0deg);
   }
   
+  /* For Safari */
+  @media not all and (min-resolution:.001dpcm) { 
+    @supports (-webkit-appearance:none) {
+      .card:hover .face-front {
+        transform: rotateY(-180deg) translateZ(1px);
+        -webkit-transform: rotateY(-180deg) translateZ(1px);
+      }
+      .card:hover .face-back {
+        transform: rotateY(0deg) translateZ(1px);
+        -webkit-transform: rotateY(0deg) translateZ(1px);
+      }
+    }
+  }

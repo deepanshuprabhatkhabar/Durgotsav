@@ -61,11 +61,12 @@ function addDataToTable(data) {
     data.forEach(item => {
         const $row = $('<tr>');
         Object.values(item).forEach(value => {
-            $row.append($('<td>').text(value));
+            $row.append($('<td>').text(value).css('white-space', 'nowrap'));
         });
         $tbody.append($row);
     });
     $('#maxRows').trigger('change');
+    $('#table-id').css('overflow-x', 'auto');
 }
 
 // Initialize pagination
@@ -93,7 +94,7 @@ const newData = [
     { sno: 15, location: "पिस्का मोड", name: "मां भवानी युवा समिति", code: "PK 15" },
     { sno: 16, location: "पंडरा", name: "दुर्गा पूजा समिति", code: "PK 16" },
     { sno: 17, location: "झीरी मोड पंडरा", name: "नवजागृति युवा क्लब", code: "PK 17" },
-    { sno: 18, location: "कचहरी रोड", name: "बिहार क्लब पूजा ���मिति", code: "PK 18" },
+    { sno: 18, location: "कचहरी रोड", name: "बिहार क्लब पूजा समिति", code: "PK 18" },
     { sno: 19, location: "कचहरी चौक", name: "संग्राम क्लब", code: "PK 19" },
     { sno: 20, location: "बकरी बाजार", name: "भारतीय युवक संघ", code: "PK 20" },
     { sno: 21, location: "मारवाड़ी कॉलेज के पास", name: "ओसीसी दुर्गा पूजा समिति", code: "PK 21" },
@@ -112,7 +113,7 @@ const newData = [
     { sno: 34, location: "दुर्गामंदिर डेलीमाकंेट", name: "श्री धर्मप्रचारिणी सभा", code: "PK 34" },
     { sno: 35, location: "चर्च रोड", name: "श्री महावीर मंदिर चर्च रोड पूजा समिति", code: "PK 35" },
     { sno: 36, location: "महावीर चौक", name: "यूथ क्लब", code: "PK 36" },
-    { sno: 37, location: "कांटा टोली", name: "�����ताजी नगर पूजा समिति", code: "PK 37" },
+    { sno: 37, location: "कांटा टोली", name: "नेताजी नगर पूजा समिति", code: "PK 37" },
     { sno: 38, location: "हरमू", name: "पंच मंदिर दुर्गा पूजा समिति", code: "PK 38" },
     { sno: 39, location: "हरमू बाइपास", name: "सत्य अमर लोक", code: "PK 39" },
     { sno: 40, location: "हरमू रोड", name: "कल्पना लोक", code: "PK 40" },
@@ -121,7 +122,7 @@ const newData = [
     { sno: 43, location: "ओवरब्रिज", name: "ओवरब्रिज दुर्गा पूजा समिति", code: "PK 43" },
     { sno: 44, location: "डोरंडा", name: "डोरंडा दुर्गा पूजा समिति", code: "PK 44" },
     { sno: 45, location: "डोरंडा", name: "भवानीपुर दुर्गा पूजा समिति", code: "PK 45" },
-    { sno: 46, location: "डोरंडा", name: "दुर्गा पूजा समिति छ���्पन सेठ", code: "PK 46" },
+    { sno: 46, location: "डोरंडा", name: "दुर्गा पूजा समिति छप्पन सेठ", code: "PK 46" },
     { sno: 47, location: "मेकॉन", name: "मेकॉन दुर्गा पूजा समिति", code: "PK 47" },
     { sno: 48, location: "सेेल", name: "पूजा समिति सेल सैटेलाइट टाउनशिप", code: "PK 48" },
     { sno: 49, location: "बिरसा चौक", name: "सार्वजनिक दुर्गा पूजा समिति", code: "PK 49" },
@@ -184,25 +185,28 @@ function toggleAccordion(index) {
     const icon = document.getElementById(`icon-${index}`);
  
     const minusSVG = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-5 h-5">
         <path d="M3.75 7.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z" />
       </svg>
     `;
  
     const plusSVG = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-5 h-5">
         <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
       </svg>
     `;
  
     // Toggle the content's max-height for smooth opening and closing
-    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-      content.style.maxHeight = '0';
-      icon.innerHTML = plusSVG;
-    } else {
+    if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
       content.style.maxHeight = content.scrollHeight + 'px';
       icon.innerHTML = minusSVG;
+    } else {
+      content.style.maxHeight = '0px';
+      icon.innerHTML = plusSVG;
     }
+
+    // Force a reflow to ensure the SVG is updated
+    icon.offsetHeight;
   }
 
   document.getElementById('menu-toggle').addEventListener('click', function() {
