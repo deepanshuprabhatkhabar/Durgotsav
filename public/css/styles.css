@@ -165,3 +165,33 @@ body {
       font-size: 14px;
     }
   }
+
+  .card {
+    position: relative;
+    width: 304px;
+    height: 352px;
+    text-align: center;
+    color: #ecf0f1;
+    border-radius: 0.8rem;
+    font-size: 1.2rem;
+  }
+
+  .face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 0.8rem;
+    transition: transform 0.5s ease-in-out;
+    backface-visibility: hidden;
+    
+  }
+  .face-back {
+    transform: rotateY(180deg);
+  }
+  .card:hover .face-front {
+    transform: rotateY(-180deg);
+  }
+  .card:hover .face-back {
+    transform: rotateY(0deg);
+  }
+  
