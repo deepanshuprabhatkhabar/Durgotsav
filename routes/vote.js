@@ -11,31 +11,25 @@ router.get('/excel', isAdmin, async (req, res) => {
         const { startDate, endDate, name, mobileNumber, criteria, pandalName } = req.query;
         let query = {};
 
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999); // Set end date to end of day
-            query.createdAt = {
-                $gte: start,
-                $lte: end
-            };
-        } else {
-            // If no date range is provided, default to yesterday
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            yesterday.setHours(0, 0, 0, 0);
-            const endOfYesterday = new Date(yesterday);
-            endOfYesterday.setHours(23, 59, 59, 999);
-            query.createdAt = {
-                $gte: yesterday,
-                $lte: endOfYesterday
-            };
-        }
+        // Check if any filter is applied
+        const isFilterApplied = startDate || endDate || name || mobileNumber || criteria || pandalName;
 
-        if (name) query.name = { $regex: name, $options: 'i' };
-        if (mobileNumber) query.mobileNumber = mobileNumber;
-        if (criteria) query.criteria = criteria;
-        if (pandalName) query.pandalName = pandalName;
+        if (isFilterApplied) {
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // Set end date to end of day
+                query.createdAt = {
+                    $gte: start,
+                    $lte: end
+                };
+            }
+
+            if (name) query.name = { $regex: name, $options: 'i' };
+            if (mobileNumber) query.mobileNumber = { $regex: mobileNumber, $options: 'i' };
+            if (criteria) query.criteria = { $regex: criteria, $options: 'i' };
+            if (pandalName) query.pandalName = { $regex: pandalName, $options: 'i' };
+        }
 
         const votes = await Vote.find(query).sort({ createdAt: 'desc' });
 
