@@ -339,6 +339,9 @@ function toggleAccordion(index) {
         alert('Vote submitted successfully!');
         // Reset form
         event.target.reset();
+        // Hide other fields
+        document.querySelector('input[name="other-criteria"]').classList.add('hidden');
+        document.querySelector('input[name="other-pandal"]').classList.add('hidden');
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message || 'Failed to submit vote. Please try again.'}`);

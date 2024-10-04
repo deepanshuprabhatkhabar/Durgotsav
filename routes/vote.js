@@ -272,6 +272,12 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
+        // Check if the user has already voted for this criteria
+        const existingVote = await Vote.findOne({ mobileNumber, criteria });
+        if (existingVote) {
+            return res.status(400).json({ message: `You have already voted for the "${criteria}" criteria.` });
+        }
+
         // Create a new vote
         const newVote = new Vote({
             name,
